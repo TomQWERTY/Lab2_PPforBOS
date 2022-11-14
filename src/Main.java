@@ -1,7 +1,7 @@
 public class Main {
     public static void main(String[] args) throws InterruptedException {
         //array declaration
-        int size = 900;
+        int size = 200;
         long[] mas = new long[size];
 
         //single thread sum calculation
