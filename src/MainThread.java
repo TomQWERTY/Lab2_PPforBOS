@@ -1,11 +1,12 @@
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Phaser;
 public class MainThread {
     private long sum;
     private int size;
     private long[] mas;
     private SumThread[] threads;
     private int finishedCount;
-    private CyclicBarrier bar;
+    private Phaser phaser;
     MainThread(long[] mas_)
     {
         mas = mas_;
@@ -13,17 +14,12 @@ public class MainThread {
         sum = 0;
         finishedCount = 0;
         threads = new SumThread[size / 2];
-        bar = new CyclicBarrier(size / 2, new Runnable() {
-            @Override
-            public void run() {
+        phaser = new Phaser(size / 2) {
+            protected boolean onAdvance(int phase, int parties) {
                 size = size / 2 + size % 2;
                 WakeUp();
-            }
-        });
-    }
-    public CyclicBarrier getBar()
-    {
-        return bar;
+                return super.onAdvance(phase, parties); }
+        };
     }
     public long getSum()
     {
@@ -59,7 +55,6 @@ public class MainThread {
         while (size > 1){
             try {
                 wait();
-                bar.reset();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -67,15 +62,14 @@ public class MainThread {
         sum = mas[0];
     }
 
-    public void AwaitBarrier()
+    public void AwaitPhaser()
     {
-        try {
-            bar.await();
-        } catch (InterruptedException ex) {
-            return;
-        } catch (java.util.concurrent.BrokenBarrierException ex) {
-            return;
-        }
+        phaser.arriveAndAwaitAdvance();
+    }
+
+    public void GetOutOfPhaser()
+    {
+        phaser.arriveAndDeregister();
     }
     synchronized public void ReportFinish(int i, long partSum)
     {
